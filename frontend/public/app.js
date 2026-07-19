@@ -63,6 +63,51 @@ function resolveForm(p) {
   return entry.forms[0];
 }
 
+function computeCP(base, ivs, cpm) {
+  const attack = base.attack + ivs.attack;
+  const defense = base.defense + ivs.defense;
+  const stamina = base.stamina + ivs.stamina;
+  return Math.max(Math.floor(attack * Math.sqrt(defense) * Math.sqrt(stamina) * cpm * cpm / 10), 10);
+}
+
+// Given species + IVs + target CP, finds the level whose computed CP matches exactly.
+function findLevelForCP(speciesKey, ivs, targetCP) {
+  const base = baseStatsBySpecies[speciesKey];
+  if (!base || Object.keys(cpMultipliers).length === 0) return null;
+  if ([ivs.attack, ivs.defense, ivs.stamina].some((v) => v === null || v === undefined || isNaN(v))) return null;
+
+  for (const [level, cpm] of Object.entries(cpMultipliers)) {
+    if (computeCP(base, ivs, cpm) === targetCP) {
+      return Number(level);
+    }
+  }
+  return null;
+}
+
+// Auto-fills the Level field when possible, but never overwrites a value
+// that's already there (typed manually, or loaded from a saved entry) --
+// the user can always edit it freely regardless of what this suggests.
+function updateLevelSuggestion() {
+  const levelField = $("pf-level");
+  if (levelField.value !== "") return; // don't clobber an existing/manual value
+
+  const speciesKey = $("pf-species").value.toLowerCase().trim();
+  const cp = Number($("pf-cp").value);
+  const ivs = {
+    attack: $("pf-attack-iv").value === "" ? null : Number($("pf-attack-iv").value),
+    defense: $("pf-defense-iv").value === "" ? null : Number($("pf-defense-iv").value),
+    stamina: $("pf-stamina-iv").value === "" ? null : Number($("pf-stamina-iv").value),
+  };
+  if (!speciesKey || !cp) return;
+
+  const level = findLevelForCP(speciesKey, ivs, cp);
+  if (level !== null) levelField.value = level;
+}
+
+["pf-species", "pf-cp", "pf-attack-iv", "pf-defense-iv", "pf-stamina-iv"].forEach((id) => {
+  $(id).addEventListener("input", updateLevelSuggestion);
+});
+
 let state = {
   token: localStorage.getItem("dex_token") || null,
   pokemon: [],
