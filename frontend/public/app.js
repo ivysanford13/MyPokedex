@@ -5,7 +5,7 @@ const TAG_COLORS = ["#c50404", "#d35f24", "#e7c712", "#008402", "#159770", "#148
 
 let baseStatsBySpecies = {}; // lowercase species name -> { id, attack, defense, stamina }
 let cpMultipliers = {}; // level (string) -> multiplier
-let movepoolBySpecies = {}; // lowercase species name -> { types: [...], fastMoves: [{id,name,type}], chargedMoves: [...] }
+let movepoolBySpecies = {}; // lowercase species name -> { forms: [{ id, label, types, fastMoves, chargedMoves }, ...] }
 
 async function loadGameData() {
   try {
@@ -40,6 +40,19 @@ function typeBadgeHtml(types) {
     .filter((t) => t && t !== "none")
     .map((t) => `<span class="type-badge" style="background:${TYPE_COLORS[t] || "#888"}">${t}</span>`)
     .join("");
+}
+
+// Resolves the correct form entry (types/moves) for a saved Pokemon, based on
+// its stored `form` field (the PvPoke speciesId), falling back to the standard
+// (first) form if none was recorded or the species has just one form.
+function resolveForm(p) {
+  const entry = movepoolBySpecies[p.species.toLowerCase().trim()];
+  if (!entry || !entry.forms || entry.forms.length === 0) return null;
+  if (p.form) {
+    const match = entry.forms.find((f) => f.id === p.form);
+    if (match) return match;
+  }
+  return entry.forms[0];
 }
 
 let state = {
@@ -244,7 +257,7 @@ function getDisplayedPokemon() {
   if (stars !== "") list = list.filter((p) => p.iv_stars === Number(stars));
   if (type !== "") {
     list = list.filter((p) => {
-      const types = movepoolBySpecies[p.species.toLowerCase().trim()]?.types || [];
+      const types = resolveForm(p)?.types || [];
       return types.includes(type);
     });
   }
@@ -338,7 +351,7 @@ function renderPokemonGrid() {
         <div class="poke-card-icons">${icons}</div>
       </div>
       <div class="poke-card-name">${escapeHtml(p.nickname || p.species)}</div>
-      <div class="type-badge-row">${typeBadgeHtml(movepoolBySpecies[p.species.toLowerCase().trim()]?.types)}</div>
+      <div class="type-badge-row">${typeBadgeHtml(resolveForm(p)?.types)}</div>
       <div class="poke-card-pills">${pills}</div>
     `;
 
@@ -462,38 +475,71 @@ function renderTagPicker() {
   }
 }
 
-// Updates the type display and fast/charged move dropdowns whenever the
-// species field changes. If a move is already selected and still valid for
-// the (possibly new) species, it's preserved; otherwise the selection resets.
-function updateSpeciesDependentFields() {
-  const speciesKey = $("pf-species").value.toLowerCase().trim();
-  const data = movepoolBySpecies[speciesKey];
-
-  $("pf-type-display").innerHTML = data ? typeBadgeHtml(data.types) : "";
-
+// Populates fast/charged move dropdowns from a specific form's movepool.
+// Preserves the previous selection if it's still valid for the new form.
+function updateMoveDropdowns(formData) {
   const fastSelect = $("pf-fast-move");
   const chargedSelect = $("pf-charged-move");
   const prevFast = fastSelect.value;
   const prevCharged = chargedSelect.value;
 
-  if (!data) {
+  if (!formData) {
     fastSelect.innerHTML = `<option value="">— Type species first —</option>`;
     chargedSelect.innerHTML = `<option value="">— Type species first —</option>`;
     return;
   }
 
-  fastSelect.innerHTML = `<option value="">—</option>` + data.fastMoves
+  fastSelect.innerHTML = `<option value="">—</option>` + formData.fastMoves
     .map((m) => `<option value="${escapeHtml(m.name)}">${escapeHtml(m.name)} (${m.type})</option>`)
     .join("");
-  chargedSelect.innerHTML = `<option value="">—</option>` + data.chargedMoves
+  chargedSelect.innerHTML = `<option value="">—</option>` + formData.chargedMoves
     .map((m) => `<option value="${escapeHtml(m.name)}">${escapeHtml(m.name)} (${m.type})</option>`)
     .join("");
 
-  if (data.fastMoves.some((m) => m.name === prevFast)) fastSelect.value = prevFast;
-  if (data.chargedMoves.some((m) => m.name === prevCharged)) chargedSelect.value = prevCharged;
+  if (formData.fastMoves.some((m) => m.name === prevFast)) fastSelect.value = prevFast;
+  if (formData.chargedMoves.some((m) => m.name === prevCharged)) chargedSelect.value = prevCharged;
 }
 
-$("pf-species").addEventListener("input", updateSpeciesDependentFields);
+// Updates the form dropdown, type display, and move dropdowns whenever the
+// species field changes. `presetFormId` (used when opening the edit modal)
+// selects that form immediately instead of defaulting to Standard.
+function updateSpeciesDependentFields(presetFormId) {
+  const speciesKey = $("pf-species").value.toLowerCase().trim();
+  const data = movepoolBySpecies[speciesKey];
+  const formRow = $("pf-form-row");
+  const formSelect = $("pf-form");
+
+  if (!data || !data.forms || data.forms.length === 0) {
+    formRow.classList.add("hidden");
+    formSelect.innerHTML = "";
+    $("pf-type-display").innerHTML = "";
+    updateMoveDropdowns(null);
+    return;
+  }
+
+  if (data.forms.length > 1) {
+    formSelect.innerHTML = data.forms.map((f) => `<option value="${f.id}">${escapeHtml(f.label)}</option>`).join("");
+    formSelect.value = presetFormId && data.forms.some((f) => f.id === presetFormId) ? presetFormId : data.forms[0].id;
+    formRow.classList.remove("hidden");
+  } else {
+    formRow.classList.add("hidden");
+    formSelect.innerHTML = `<option value="${data.forms[0].id}">${data.forms[0].label}</option>`;
+  }
+
+  const activeForm = data.forms.find((f) => f.id === formSelect.value) || data.forms[0];
+  $("pf-type-display").innerHTML = typeBadgeHtml(activeForm.types);
+  updateMoveDropdowns(activeForm);
+}
+
+$("pf-species").addEventListener("input", () => updateSpeciesDependentFields());
+$("pf-form").addEventListener("change", () => {
+  const speciesKey = $("pf-species").value.toLowerCase().trim();
+  const data = movepoolBySpecies[speciesKey];
+  if (!data) return;
+  const activeForm = data.forms.find((f) => f.id === $("pf-form").value) || data.forms[0];
+  $("pf-type-display").innerHTML = typeBadgeHtml(activeForm.types);
+  updateMoveDropdowns(activeForm);
+});
 
 function openPokemonModal(pokemon = null) {
   editingPokemonId = pokemon ? pokemon.id : null;
@@ -508,7 +554,7 @@ function openPokemonModal(pokemon = null) {
   $("pf-defense-iv").value = pokemon?.defense_iv ?? "";
   $("pf-stamina-iv").value = pokemon?.stamina_iv ?? "";
   $("pf-stars").value = pokemon?.iv_stars ?? "";
-  updateSpeciesDependentFields();
+  updateSpeciesDependentFields(pokemon?.form || null);
   $("pf-fast-move").value = pokemon?.fast_move || "";
   $("pf-charged-move").value = pokemon?.charged_move || "";
   $("pf-shiny").checked = !!pokemon?.is_shiny;
@@ -630,6 +676,7 @@ $("pokemon-form").addEventListener("submit", async (e) => {
     species: $("pf-species").value.trim(),
     nickname: $("pf-nickname").value.trim() || null,
     gender: $("pf-gender").value || null,
+    form: $("pf-form-row").classList.contains("hidden") ? null : ($("pf-form").value || null),
     cp: Number($("pf-cp").value),
     level: $("pf-level").value ? Number($("pf-level").value) : null,
     attack_iv: $("pf-attack-iv").value !== "" ? Number($("pf-attack-iv").value) : null,

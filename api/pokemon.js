@@ -115,7 +115,7 @@ router.post("/", async (req, res) => {
     const {
       species, nickname, cp, level, hp,
       attack_iv, defense_iv, stamina_iv, iv_stars,
-      fast_move, charged_move, gender,
+      fast_move, charged_move, gender, form,
       is_shiny, is_shadow, is_purified, is_lucky, is_favorited,
       notes, tagIds,
     } = req.body;
@@ -127,13 +127,13 @@ router.post("/", async (req, res) => {
     const result = await db.query(
       `INSERT INTO pokemon_entries
         (user_id, species, nickname, cp, level, hp, attack_iv, defense_iv, stamina_iv, iv_stars,
-         fast_move, charged_move, gender, is_shiny, is_shadow, is_purified, is_lucky, is_favorited, notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+         fast_move, charged_move, gender, form, is_shiny, is_shadow, is_purified, is_lucky, is_favorited, notes)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
        RETURNING *`,
       [
         userId, species, nickname || null, cp, level || null, hp || null,
         attack_iv ?? null, defense_iv ?? null, stamina_iv ?? null, iv_stars ?? null,
-        fast_move || null, charged_move || null, gender || null,
+        fast_move || null, charged_move || null, gender || null, form || null,
         !!is_shiny, !!is_shadow, !!is_purified, !!is_lucky, !!is_favorited,
         notes || null,
       ]
@@ -166,7 +166,7 @@ router.patch("/:id", async (req, res) => {
     const allowedFields = [
       "species", "nickname", "cp", "level", "hp",
       "attack_iv", "defense_iv", "stamina_iv", "iv_stars",
-      "fast_move", "charged_move", "gender",
+      "fast_move", "charged_move", "gender", "form",
       "is_shiny", "is_shadow", "is_purified", "is_lucky", "is_favorited", "notes",
     ];
 
