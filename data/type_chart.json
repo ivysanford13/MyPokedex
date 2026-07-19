@@ -1,0 +1,29 @@
+{
+  "_comment": "Damage multipliers for Pokemon GO. 1.6 = super effective, 0.625 = not very effective, 0.390625 = double resist, 1.0 = neutral.",
+  "multipliers": {
+    "super_effective": 1.6,
+    "not_very_effective": 0.625,
+    "double_resist": 0.390625,
+    "neutral": 1.0
+  },
+  "effectiveness": {
+    "normal":   { "weak_to": [], "resists": [], "immune_to": [] },
+    "fighting": { "weak_to": ["flying", "psychic", "fairy"], "resists": ["rock", "bug", "dark"], "immune_to": [] },
+    "flying":   { "weak_to": ["rock", "electric", "ice"], "resists": ["fighting", "bug", "grass"], "immune_to": ["ground"] },
+    "poison":   { "weak_to": ["ground", "psychic"], "resists": ["fighting", "poison", "bug", "grass", "fairy"], "immune_to": [] },
+    "ground":   { "weak_to": ["water", "grass", "ice"], "resists": ["poison", "rock"], "immune_to": ["electric"] },
+    "rock":     { "weak_to": ["fighting", "ground", "steel", "water", "grass"], "resists": ["normal", "flying", "poison", "fire"], "immune_to": [] },
+    "bug":      { "weak_to": ["flying", "rock", "fire"], "resists": ["fighting", "ground", "grass"], "immune_to": [] },
+    "ghost":    { "weak_to": ["ghost", "dark"], "resists": ["poison", "bug"], "immune_to": ["normal", "fighting"] },
+    "steel":    { "weak_to": ["fighting", "ground", "fire"], "resists": ["normal", "flying", "rock", "bug", "steel", "grass", "psychic", "ice", "dragon", "fairy"], "immune_to": ["poison"] },
+    "fire":     { "weak_to": ["ground", "rock", "water"], "resists": ["bug", "steel", "fire", "grass", "ice", "fairy"], "immune_to": [] },
+    "water":    { "weak_to": ["grass", "electric"], "resists": ["steel", "fire", "water", "ice"], "immune_to": [] },
+    "grass":    { "weak_to": ["flying", "poison", "bug", "fire", "ice"], "resists": ["ground", "water", "grass", "electric"], "immune_to": [] },
+    "electric": { "weak_to": ["ground"], "resists": ["flying", "steel", "electric"], "immune_to": [] },
+    "psychic":  { "weak_to": ["bug", "ghost", "dark"], "resists": ["fighting", "psychic"], "immune_to": [] },
+    "ice":      { "weak_to": ["fighting", "rock", "steel", "fire"], "resists": ["ice"], "immune_to": [] },
+    "dragon":   { "weak_to": ["ice", "dragon", "fairy"], "resists": ["fire", "water", "grass", "electric"], "immune_to": [] },
+    "dark":     { "weak_to": ["fighting", "bug", "fairy"], "resists": ["ghost", "dark"], "immune_to": ["psychic"] },
+    "fairy":    { "weak_to": ["poison", "steel"], "resists": ["fighting", "bug", "dark"], "immune_to": ["dragon"] }
+  }
+}

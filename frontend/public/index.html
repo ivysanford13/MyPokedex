@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>My Pokédex</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── AUTH SCREEN ── -->
+  <div id="auth-screen" class="screen">
+    <div class="auth-card">
+      <h1>My Pokédex</h1>
+      <p class="auth-sub">Your collection. Your data. Nothing shared with Niantic.</p>
+
+      <form id="auth-form">
+        <label>Email
+          <input type="email" id="auth-email" required autocomplete="email" />
+        </label>
+        <label>Password
+          <input type="password" id="auth-password" required autocomplete="current-password" minlength="6" />
+        </label>
+        <p id="auth-error" class="error-text"></p>
+        <button type="submit" id="auth-submit" class="btn-primary">Log in</button>
+      </form>
+
+      <button id="auth-toggle" class="link-btn">Need an account? Sign up</button>
+    </div>
+  </div>
+
+  <!-- ── MAIN APP ── -->
+  <div id="app-screen" class="screen hidden">
+    <header class="topbar">
+      <div class="brand">My Pokédex</div>
+      <button id="logout-btn" class="link-btn">Log out</button>
+    </header>
+
+    <nav class="tabbar">
+      <button class="tab-btn active" data-tab="pokemon">Pokémon</button>
+      <button class="tab-btn" data-tab="tags">Tags</button>
+      <button class="tab-btn" data-tab="chat">Chat bot</button>
+    </nav>
+
+    <!-- POKEMON TAB -->
+    <section id="tab-pokemon" class="tab-panel">
+      <div class="panel-header">
+        <div id="active-tag-filter" class="filter-chip hidden">
+          Filtered by <span id="active-tag-name"></span>
+          <button id="clear-tag-filter">✕</button>
+        </div>
+        <div class="header-actions">
+          <button id="select-mode-btn" class="btn-toolbar btn-small">Select</button>
+          <button id="add-pokemon-btn" class="btn-primary btn-small">+ Add Pokémon</button>
+        </div>
+      </div>
+
+      <div id="bulk-action-bar" class="bulk-action-bar hidden">
+        <span id="bulk-selected-count">0 selected</span>
+        <div class="bulk-action-buttons">
+          <select id="bulk-tag-select">
+            <option value="">Apply tag...</option>
+          </select>
+          <button id="bulk-transfer-btn" class="btn-danger btn-small">Transfer selected</button>
+          <button id="bulk-cancel-btn" class="link-btn" style="margin-top:0;">Cancel</button>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <input type="text" id="search-input" placeholder="Search species or nickname..." />
+        <button id="filter-toggle-btn" class="btn-toolbar">Filters</button>
+        <select id="sort-select" class="btn-toolbar">
+          <option value="cp-desc">CP: High to low</option>
+          <option value="cp-asc">CP: Low to high</option>
+          <option value="stars-desc">Stars: 4★ to 0★</option>
+          <option value="stars-asc">Stars: 0★ to 4★</option>
+          <option value="name-asc">Name: A to Z</option>
+          <option value="name-desc">Name: Z to A</option>
+          <option value="number-asc">Number: Low to high</option>
+          <option value="number-desc">Number: High to low</option>
+        </select>
+      </div>
+
+      <div id="filter-panel" class="filter-panel hidden">
+        <label>Attack IV
+          <select id="filter-attack-iv"><option value="">Any</option></select>
+        </label>
+        <label>Defense IV
+          <select id="filter-defense-iv"><option value="">Any</option></select>
+        </label>
+        <label>HP IV
+          <select id="filter-stamina-iv"><option value="">Any</option></select>
+        </label>
+        <label>Stars
+          <select id="filter-stars">
+            <option value="">Any</option>
+            <option value="0">0★</option>
+            <option value="1">1★</option>
+            <option value="2">2★</option>
+            <option value="3">3★</option>
+            <option value="4">4★</option>
+          </select>
+        </label>
+        <label>Type
+          <select id="filter-type"><option value="">Any</option></select>
+        </label>
+        <button id="clear-filters-btn" class="link-btn" style="margin-top:0;">Clear filters</button>
+      </div>
+
+      <div id="pokemon-grid" class="pokemon-grid"></div>
+      <p id="pokemon-empty" class="empty-state hidden">No Pokémon logged yet. Add your first one above.</p>
+      <p id="pokemon-no-match" class="empty-state hidden">No Pokémon match your search or filters.</p>
+    </section>
+
+    <!-- TAGS TAB -->
+    <section id="tab-tags" class="tab-panel hidden">
+      <div class="panel-header">
+        <h2>Tags</h2>
+        <button id="add-tag-btn" class="btn-primary btn-small">+ Create tag</button>
+      </div>
+      <div id="tag-list" class="tag-list"></div>
+      <p id="tags-empty" class="empty-state hidden">No tags yet. Create one to start organizing your collection.</p>
+    </section>
+
+    <!-- CHAT TAB -->
+    <section id="tab-chat" class="tab-panel hidden">
+      <div id="chat-messages" class="chat-messages">
+        <div class="chat-bubble assistant">
+          Ask me anything about Pokémon GO — mechanics, meta picks, or your own collection. I'll always cite where an answer comes from.
+        </div>
+      </div>
+      <form id="chat-form" class="chat-input-bar">
+        <input type="text" id="chat-input" placeholder="Ask about your Pokémon or the game..." autocomplete="off" />
+        <button type="submit" class="btn-primary btn-small">Send</button>
+      </form>
+    </section>
+  </div>
+
+  <!-- ── ADD POKEMON MODAL ── -->
+  <div id="pokemon-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-head">
+        <h2>Add Pokémon</h2>
+        <button id="close-pokemon-modal" class="icon-btn">✕</button>
+      </div>
+      <form id="pokemon-form">
+        <label>Species *
+          <input type="text" id="pf-species" required placeholder="e.g. Charizard" />
+        </label>
+        <div id="pf-type-display" class="type-badge-row"></div>
+        <div class="form-row">
+          <label>Nickname
+            <input type="text" id="pf-nickname" />
+          </label>
+          <label>Gender
+            <select id="pf-gender">
+              <option value="">—</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="unknown">Genderless</option>
+            </select>
+          </label>
+        </div>
+        <div class="form-row">
+          <label>CP *
+            <input type="number" id="pf-cp" required min="10" />
+          </label>
+          <label>Level
+            <input type="number" id="pf-level" step="0.5" min="1" max="51" />
+          </label>
+        </div>
+        <div class="form-row">
+          <label>Attack IV
+            <input type="number" id="pf-attack-iv" min="0" max="15" />
+          </label>
+          <label>Defense IV
+            <input type="number" id="pf-defense-iv" min="0" max="15" />
+          </label>
+          <label>HP IV
+            <input type="number" id="pf-stamina-iv" min="0" max="15" />
+          </label>
+        </div>
+        <div class="form-row">
+          <label>IV Stars
+            <select id="pf-stars">
+              <option value="">—</option>
+              <option value="0">0★</option>
+              <option value="1">1★</option>
+              <option value="2">2★</option>
+              <option value="3">3★</option>
+              <option value="4">4★</option>
+            </select>
+          </label>
+        </div>
+        <div class="form-row">
+          <label>Fast move
+            <select id="pf-fast-move"><option value="">— Type species first —</option></select>
+          </label>
+          <label>Charged move
+            <select id="pf-charged-move"><option value="">— Type species first —</option></select>
+          </label>
+        </div>
+        <div class="checkbox-row">
+          <label><input type="checkbox" id="pf-shiny" /> Shiny</label>
+          <label><input type="checkbox" id="pf-shadow" /> Shadow</label>
+          <label><input type="checkbox" id="pf-purified" /> Purified</label>
+          <label><input type="checkbox" id="pf-lucky" /> Lucky</label>
+          <label><input type="checkbox" id="pf-favorited" /> Favorited</label>
+        </div>
+        <label>Tags
+          <div id="pf-tag-picker" class="tag-picker"></div>
+        </label>
+        <button type="submit" class="btn-primary">Save Pokémon</button>
+        <button type="button" id="pf-transfer-btn" class="btn-danger hidden">Transfer this Pokémon</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── ADD TAG MODAL ── -->
+  <div id="tag-modal" class="modal-overlay hidden">
+    <div class="modal modal-small">
+      <div class="modal-head">
+        <h2>Create tag</h2>
+        <button id="close-tag-modal" class="icon-btn">✕</button>
+      </div>
+      <form id="tag-form">
+        <label>Name *
+          <input type="text" id="tf-name" required placeholder="e.g. Great League" />
+        </label>
+        <label>Color
+          <div id="tf-color-picker" class="color-picker"></div>
+        </label>
+        <button type="submit" class="btn-primary">Create tag</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

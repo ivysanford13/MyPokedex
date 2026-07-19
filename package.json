@@ -1,0 +1,18 @@
+{
+  "name": "pogo-app",
+  "version": "0.1.0",
+  "description": "Pokemon GO companion app: Pokemon storage tracker + RAG chatbot with citations",
+  "main": "index.js",
+  "scripts": {
+    "start": "node api/server.js",
+    "fetch-stats": "node ingest/fetchBaseStats.js",
+    "fetch-movepool": "node ingest/fetchMovepool.js"
+  },
+  "dependencies": {
+    "pg": "^8.11.0",
+    "@google/generative-ai": "^0.21.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "dotenv": "^16.4.0",
+    "express": "^4.19.0"
+  }
+}
