@@ -41,20 +41,51 @@ async function fetchMovepool() {
     moveById[move.moveId] = { id: move.moveId, name: move.name, type: move.type };
   }
 
-  // For each dex number, prefer the plain base-form entry (no "_shadow",
-  // "_mega", "_alolan", etc. suffix). Regional/mega forms are skipped for now --
-  // they'd need their own separate species keys to track accurately.
+  // Some species (Zacian, Ho-Oh, Mr. Mime, Tapu Koko, etc.) don't have a plain
+  // unsuffixed entry in PvPoke's data at all -- their only form(s) always carry
+  // a suffix, whether because the name itself has an underscore or because the
+  // species requires picking a default form (e.g. zacian_hero vs zacian_crowned_sword).
+  // This map picks a sensible default "catchable" form for the latter group.
+  const PREFERRED_FORM = {
+    412: "burmy_plant", 413: "wormadam_plant", 421: "cherrim_overcast",
+    487: "giratina_altered", 492: "shaymin_land", 555: "darmanitan_standard",
+    641: "tornadus_incarnate", 642: "thundurus_incarnate", 645: "landorus_incarnate",
+    647: "keldeo_ordinary", 648: "meloetta_aria", 681: "aegislash_shield",
+    710: "pumpkaboo_average", 711: "gourgeist_average", 741: "oricorio_baile",
+    745: "lycanroc_midday", 774: "minior_meteor", 876: "indeedee_male",
+    877: "morpeko_full_belly", 888: "zacian_hero", 889: "zamazenta_hero",
+    892: "urshifu_single_strike", 902: "basculegion_male", 905: "enamorus_incarnate",
+    978: "tatsugiri_curly",
+  };
+
+  // For each dex number, pick one representative entry:
+  //  1. Prefer a plain unsuffixed name if one exists (e.g. "venusaur" over "venusaur_mega") --
+  //     this correctly skips mega/alolan/galarian/hisuian/regional variants.
+  //  2. Otherwise use PREFERRED_FORM if this dex number needs an explicit default.
+  //  3. Otherwise fall back to the first non-shadow entry (covers names that always
+  //     carry an underscore, like "mr_mime" or "tapu_koko", where there's only one anyway).
   const baseFormByDex = {};
+  const byDex = {};
   for (const p of gm.pokemon) {
-    if (p.speciesId.includes("_")) continue; // skip shadow/mega/regional forms
-    if (!(p.dex in baseFormByDex)) baseFormByDex[p.dex] = p;
+    if (p.speciesId.endsWith("_shadow")) continue;
+    (byDex[p.dex] ??= []).push(p);
+  }
+  for (const [dex, entries] of Object.entries(byDex)) {
+    const plain = entries.find((e) => !e.speciesId.includes("_"));
+    if (plain) {
+      baseFormByDex[dex] = plain;
+    } else if (PREFERRED_FORM[dex]) {
+      baseFormByDex[dex] = entries.find((e) => e.speciesId === PREFERRED_FORM[dex]) || entries[0];
+    } else {
+      baseFormByDex[dex] = entries[0];
+    }
   }
 
   const results = {};
   let matched = 0;
 
   for (const [dex, speciesName] of Object.entries(nameById)) {
-    const entry = baseFormByDex[Number(dex)];
+    const entry = baseFormByDex[dex];
     if (!entry) continue;
 
     results[speciesName] = {
@@ -67,7 +98,7 @@ async function fetchMovepool() {
 
   fs.writeFileSync(OUT_PATH, JSON.stringify(results, null, 2));
   console.log(`Done. Wrote movepool data for ${matched} species to ${OUT_PATH}`);
-  console.log("Note: regional/mega/gigantamax forms are not separately tracked yet.");
+  console.log("Note: mega/regional/gigantamax forms use the base form's data, not tracked separately.");
 }
 
 fetchMovepool().catch((err) => {
