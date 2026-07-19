@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node api/server.js",
     "fetch-stats": "node ingest/fetchBaseStats.js",
-    "fetch-movepool": "node ingest/fetchMovepool.js"
+    "fetch-movepool": "node ingest/fetchMovepool.js",
+    "fetch-form-sprites": "node ingest/fetchFormSprites.js"
   },
   "dependencies": {
     "pg": "^8.11.0",

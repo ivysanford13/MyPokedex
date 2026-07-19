@@ -6,6 +6,7 @@ const TAG_COLORS = ["#c50404", "#d35f24", "#e7c712", "#008402", "#159770", "#148
 let baseStatsBySpecies = {}; // lowercase species name -> { id, attack, defense, stamina }
 let cpMultipliers = {}; // level (string) -> multiplier
 let movepoolBySpecies = {}; // lowercase species name -> { forms: [{ id, label, types, fastMoves, chargedMoves }, ...] }
+let formSpriteIds = {}; // PvPoke form id (e.g. "vulpix_alolan") -> PokeAPI sprite id, for forms with distinct artwork
 
 async function loadGameData() {
   try {
@@ -24,6 +25,13 @@ async function loadGameData() {
     if (res.ok) movepoolBySpecies = await res.json();
   } catch (err) {
     console.warn("Could not load movepool data (type/move dropdowns will be limited):", err);
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/data/form_sprites.json`);
+    if (res.ok) formSpriteIds = await res.json();
+  } catch (err) {
+    console.warn("Could not load form sprite data (alt forms will use standard artwork):", err);
   }
 }
 
@@ -208,16 +216,20 @@ const STAR_SVG = `<svg viewBox="0 0 24 24"><path d="M12 3.5l2.4 5.8 6.1.5-4.7 4 
 // Builds an ordered list of sprite URLs to try, most specific first
 // (shiny+female -> shiny -> female -> default), falling back gracefully
 // since most species don't have gender-specific or shiny artwork available.
-function spriteUrls(species, isShiny, gender) {
+function spriteUrls(species, isShiny, gender, formId) {
   const entry = baseStatsBySpecies[species.toLowerCase().trim()];
   if (!entry) return [];
   const base = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/";
-  const id = entry.id;
+  // Prefer the form-specific artwork id (e.g. Alolan Vulpix) if we have one on file;
+  // otherwise fall back to the species' standard national dex id.
+  const id = (formId && formSpriteIds[formId]) || entry.id;
   const urls = [];
   if (isShiny && gender === "female") urls.push(`${base}shiny/female/${id}.png`);
   if (isShiny) urls.push(`${base}shiny/${id}.png`);
   if (gender === "female") urls.push(`${base}female/${id}.png`);
   urls.push(`${base}${id}.png`);
+  // If a form-specific id was used, fall back to the standard artwork as a last resort.
+  if (formId && formSpriteIds[formId]) urls.push(`${base}${entry.id}.png`);
   return urls;
 }
 
@@ -328,7 +340,7 @@ function renderPokemonGrid() {
       p.is_purified ? `<span class="pill pill-purified">Purified</span>` : "",
     ].join("");
 
-    const spriteChain = spriteUrls(p.species, p.is_shiny, p.gender);
+    const spriteChain = spriteUrls(p.species, p.is_shiny, p.gender, p.form);
     const spriteHtml = spriteChain.length > 0
       ? `<img class="poke-sprite" src="${spriteChain[0]}" data-fallbacks='${escapeHtml(JSON.stringify(spriteChain))}' data-idx="0" alt="${escapeHtml(p.species)}"
              onerror="trySpriteFallback(this)" />`
