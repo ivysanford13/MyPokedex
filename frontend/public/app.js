@@ -104,10 +104,6 @@ function updateLevelSuggestion() {
   if (level !== null) levelField.value = level;
 }
 
-["pf-species", "pf-cp", "pf-attack-iv", "pf-defense-iv", "pf-stamina-iv"].forEach((id) => {
-  $(id).addEventListener("input", updateLevelSuggestion);
-});
-
 let state = {
   token: localStorage.getItem("dex_token") || null,
   pokemon: [],
@@ -125,6 +121,10 @@ let state = {
 
 // ── DOM refs ──
 const $ = (id) => document.getElementById(id);
+
+["pf-species", "pf-cp", "pf-attack-iv", "pf-defense-iv", "pf-stamina-iv"].forEach((id) => {
+  $(id).addEventListener("input", updateLevelSuggestion);
+});
 
 // ── Toast helper ──
 function showToast(message, isError = false) {
