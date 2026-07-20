@@ -75,12 +75,23 @@ function findLevelForCP(base, ivs, targetCP) {
   if (!base || Object.keys(cpMultipliers).length === 0) return null;
   if ([ivs.attack, ivs.defense, ivs.stamina].some((v) => v === null || v === undefined || isNaN(v))) return null;
 
+  // Community-sourced base stats occasionally differ from Niantic's exact
+  // internal values by a tiny amount, which can make an exact CP match fail
+  // even for genuinely correct data. Allow a small tolerance and pick the
+  // closest level instead of requiring a bit-perfect match.
+  const TOLERANCE = 3;
+  let best = null;
+  let bestDiff = Infinity;
+
   for (const [level, cpm] of Object.entries(cpMultipliers)) {
-    if (computeCP(base, ivs, cpm) === targetCP) {
-      return Number(level);
+    const diff = Math.abs(computeCP(base, ivs, cpm) - targetCP);
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      best = Number(level);
     }
   }
-  return null;
+
+  return bestDiff <= TOLERANCE ? best : null;
 }
 
 // Picks the right base stats for whatever species/form is currently selected
