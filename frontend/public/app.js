@@ -626,6 +626,7 @@ function openPokemonModal(pokemon = null) {
 
   renderTagPicker();
   $("pokemon-modal").classList.remove("hidden");
+  updateLevelSuggestion();
 }
 
 $("pf-transfer-btn").addEventListener("click", async () => {
