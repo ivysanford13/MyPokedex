@@ -110,6 +110,7 @@ async function fetchMovepool() {
         id: entry.speciesId,
         label: entry.speciesId === standardId ? "Standard" : labelForSuffix(entry.speciesId, standardId.split("_")[0]),
         types: entry.types,
+        baseStats: { attack: entry.baseStats.atk, defense: entry.baseStats.def, stamina: entry.baseStats.hp },
         fastMoves: (entry.fastMoves || []).map((id) => moveById[id]).filter(Boolean),
         chargedMoves: (entry.chargedMoves || []).map((id) => moveById[id]).filter(Boolean),
       })),

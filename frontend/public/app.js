@@ -71,8 +71,7 @@ function computeCP(base, ivs, cpm) {
 }
 
 // Given species + IVs + target CP, finds the level whose computed CP matches exactly.
-function findLevelForCP(speciesKey, ivs, targetCP) {
-  const base = baseStatsBySpecies[speciesKey];
+function findLevelForCP(base, ivs, targetCP) {
   if (!base || Object.keys(cpMultipliers).length === 0) return null;
   if ([ivs.attack, ivs.defense, ivs.stamina].some((v) => v === null || v === undefined || isNaN(v))) return null;
 
@@ -82,6 +81,19 @@ function findLevelForCP(speciesKey, ivs, targetCP) {
     }
   }
   return null;
+}
+
+// Picks the right base stats for whatever species/form is currently selected
+// in the form -- forms like Mega or Alolan have their own distinct stats,
+// so this prefers those over the plain species-level stats when relevant.
+function currentFormBaseStats(speciesKey) {
+  const entry = movepoolBySpecies[speciesKey];
+  if (entry && entry.forms && entry.forms.length > 0) {
+    const formId = $("pf-form-row").classList.contains("hidden") ? entry.forms[0].id : $("pf-form").value;
+    const formData = entry.forms.find((f) => f.id === formId) || entry.forms[0];
+    if (formData.baseStats) return formData.baseStats;
+  }
+  return baseStatsBySpecies[speciesKey];
 }
 
 // Auto-fills the Level field when possible, but never overwrites a value
@@ -100,7 +112,8 @@ function updateLevelSuggestion() {
   };
   if (!speciesKey || !cp) return;
 
-  const level = findLevelForCP(speciesKey, ivs, cp);
+  const base = currentFormBaseStats(speciesKey);
+  const level = findLevelForCP(base, ivs, cp);
   if (level !== null) levelField.value = level;
 }
 
@@ -596,6 +609,7 @@ $("pf-form").addEventListener("change", () => {
   const activeForm = data.forms.find((f) => f.id === $("pf-form").value) || data.forms[0];
   $("pf-type-display").innerHTML = typeBadgeHtml(activeForm.types);
   updateMoveDropdowns(activeForm);
+  updateLevelSuggestion();
 });
 
 function openPokemonModal(pokemon = null) {
